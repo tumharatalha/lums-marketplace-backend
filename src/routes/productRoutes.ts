@@ -1,113 +1,106 @@
+/** @format */
+
 import express, { Request, Response } from "express";
 import { body } from "express-validator";
-import { requireAuth, validateRequest } from "./middlewares";
-import { Product } from "../models";
+import Product from "../models/product";
+import {
+    createProduct,
+    getProductByCategoryId,
+    getProductById,
+} from "../controllers/productController";
+import authMiddleware from "../middlewares/authMiddleware";
 
 const router = express.Router();
-
+router.use(authMiddleware);
 router.post(
-  "/api/products",
-  requireAuth,
-  [
-    body("title").not().isEmpty().withMessage("Title is required"),
-    body("description").not().isEmpty().withMessage("Description is required"),
-    body("price")
-      .isFloat({ gt: 0 })
-      .withMessage("Price must be greater than 0"),
-    body("imageUrl").not().isEmpty().withMessage("Image URL is required"),
-  ],
-  validateRequest,
-  async (req: Request, res: Response) => {
-    const { title, description, price, imageUrl } = req.body;
-
-    const product = Product.build({
-      title,
-      description,
-      price,
-      imageUrl,
-      userId: req.currentUser!.id,
-    });
-    await product.save();
-
-    res.status(201).send(product);
-  }
+    "/",
+    [
+        body("name").not().isEmpty().withMessage("Title is required"),
+        body("description")
+            .not()
+            .isEmpty()
+            .withMessage("Description is required"),
+        body("price")
+            .isFloat({ gt: 0 })
+            .withMessage("Price must be greater than 0"),
+    ],
+    createProduct
 );
 
-router.get("/api/products/:id", async (req: Request, res: Response) => {
-  const product = await Product.findById(req.params.id);
+router.get("/:id", getProductById);
 
-  if (!product) {
-    return res.status(404).send({ errors: [{ message: "Product not found" }] });
-  }
+router.get("/", async (req: Request, res: Response) => {
+    const products = await Product.find({});
 
-  res.send(product);
+    res.send(products);
 });
+router.get("/category/:id", getProductByCategoryId);
+// router.put(
+//     "/api/products/:id",
+//     requireAuth,
+//     [
+//         body("title").not().isEmpty().withMessage("Title is required"),
+//         body("description")
+//             .not()
+//             .isEmpty()
+//             .withMessage("Description is required"),
+//         body("price")
+//             .isFloat({ gt: 0 })
+//             .withMessage("Price must be greater than 0"),
+//         body("imageUrl").not().isEmpty().withMessage("Image URL is required"),
+//     ],
+//     validateRequest,
+//     async (req: Request, res: Response) => {
+//         const product = await Product.findById(req.params.id);
 
-router.get("/api/products", async (req: Request, res: Response) => {
-  const products = await Product.find({});
+//         if (!product) {
+//             return res
+//                 .status(404)
+//                 .send({ errors: [{ message: "Product not found" }] });
+//         }
 
-  res.send(products);
-});
+//         if (product.userId !== req.currentUser!.id) {
+//             return res
+//                 .status(401)
+//                 .send({ errors: [{ message: "Not authorized" }] });
+//         }
 
-router.put(
-  "/api/products/:id",
-  requireAuth,
-  [
-    body("title").not().isEmpty().withMessage("Title is required"),
-    body("description").not().isEmpty().withMessage("Description is required"),
-    body("price")
-      .isFloat({ gt: 0 })
-      .withMessage("Price must be greater than 0"),
-    body("imageUrl").not().isEmpty().withMessage("Image URL is required"),
-  ],
-  validateRequest,
-  async (req: Request, res: Response) => {
-    const product = await Product.findById(req.params.id);
+//         const { title, description, price, imageUrl } = req.body;
 
-    if (!product) {
-      return res
-        .status(404)
-        .send({ errors: [{ message: "Product not found" }] });
-    }
+//         product.set({
+//             title,
+//             description,
+//             price,
+//             imageUrl,
+//         });
+//         await product.save();
 
-    if (product.userId !== req.currentUser!.id) {
-      return res.status(401).send({ errors: [{ message: "Not authorized" }] });
-    }
+//         res.send(product);
+//     }
+// );
 
-    const { title, description, price, imageUrl } = req.body;
+// router.delete(
+//     "/api/products/:id",
+//     requireAuth,
+//     async (req: Request, res: Response) => {
+//         const product = await Product.findById(req.params.id);
 
-    product.set({
-      title,
-      description,
-      price,
-      imageUrl,
-    });
-    await product.save();
+//         if (!product) {
+//             return res
+//                 .status(404)
+//                 .send({ errors: [{ message: "Product not found" }] });
+//         }
 
-    res.send(product);
-  }
-);
+//         if (product.userId !== req.currentUser!.id) {
+//             return res
+//                 .status(401)
+//                 .send({ errors: [{ message: "Not authorized" }] });
+//         }
 
-router.delete(
-  "/api/products/:id",
-  requireAuth,
-  async (req: Request, res: Response) => {
-    const product = await Product.findById(req.params.id);
+//         await product.remove();
 
-    if (!product) {
-      return res
-        .status(404)
-        .send({ errors: [{ message: "Product not found" }] });
-    }
-
-    if (product.userId !== req.currentUser!.id) {
-      return res.status(401).send({ errors: [{ message: "Not authorized" }] });
-    }
-
-    await product.remove();
-
-    res.send({ message: "Product deleted successfully" });
-  }
-);
+//         res.send({ message: "Product deleted successfully" });
+//     }
+// );
 
 export { router as productRouter };

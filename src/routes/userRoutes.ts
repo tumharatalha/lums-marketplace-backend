@@ -1,10 +1,12 @@
+/** @format */
+
 import { Router } from "express";
 import {
-  createUser,
-  getUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
+    createUser,
+    getUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
 } from "../controllers/userController";
 import authMiddleware from "../middlewares/authMiddleware";
 
